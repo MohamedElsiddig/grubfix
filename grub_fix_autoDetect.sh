@@ -3,7 +3,7 @@
 #This Script can help you to fix grub issue after installing windows
 ###########################################################################
 
-#Written By Mohamed Elsiddig 
+##Written By Mohamed Elsiddig 
 
 
 #########################################################################
