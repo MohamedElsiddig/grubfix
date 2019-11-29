@@ -32,7 +32,8 @@ function check_efi()
         else
             sleep 3
             echo -e "$light_cyan [ * ]$light_blue No UEFI device.. Using legacy mode..$normal "
-            echo ""
+            efi_mode=false
+            sleep 3
     fi
     
 }
@@ -63,7 +64,7 @@ function part_find()
                     grub_fix
                 else 
                     sleep 2
-                    echo -e " $red[ X ]$white nothing Here Moving To The Next Partition ...!!"
+                    echo -e " $red[ X ]$white Nothing Here Moving To The Next Partition ...!!"
                     umount /media/ > /dev/null 2>&1
                     echo ""
             fi
@@ -92,11 +93,13 @@ function chk_root()
 #The Grub Fix Function executes commands thats fix the grub
 ###################################################################
 
+
+
 function grub_fix()
 {
     sleep 2
     check_efi
-    if ! $efi_mode
+    if [[ $efi_mode=fales ]]
         then
             #echo -en "$light_cyan [ * ]$light_blue Please Enter the target os partition:$normal "
             #read partition
@@ -120,6 +123,7 @@ function grub_fix()
                             echo " "
                             echo -e " $light_green[ ✔ ]$normal$light_cyan Installation Complete " 
                             sleep 2
+                            echo ""
                             echo -e "$orange [ ☣ ]$yellow Running update-grub ..."
                             chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg > /dev/null 2>&1
                             sleep 2
@@ -146,9 +150,10 @@ function grub_fix()
                         exit 1
                     fi
             else
+                
                 echo -e " "
-                echo -e $red "[ X ]$normal$white The Partition name you selected is not exist in /dev !\n" $normal
-                part_select
+                echo -e $red "[ X ]$normal$white Couldn't Find a linux installation in the Hard Disk !!\n" $normal
+                exit 1
             fi
     else
         if [[ ! -d $partition && -e $partition ]]
@@ -163,9 +168,10 @@ function grub_fix()
                             mount --bind $fs_mount /mnt/$fs_mount > /dev/null 2>&1
                     done
                     echo " "
-                    echo -e "$orange[ ☣ ]$yellow chroot: running mount $efi_dev /boot/efi ..."
+                    echo -e "$orange[ ☣ ]$yellow Running mount $efi_dev /boot/efi ..."
                     chroot /mnt mount $efi_dev /boot/efi > /dev/null 2>&1
                     sleep 2
+                    echo " "
                     echo -e "$orange [ ☣ ]$yellow Installing The new grub ..."
                     chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi > /dev/null 2>&1
                     if [ $? -eq 0 ]
@@ -177,7 +183,7 @@ function grub_fix()
                             echo -e "$orange [ ☣ ]$yellow Running update-grub ..."
                             chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg > /dev/null 2>&1
                             sleep 2
-                            echo -e "$orange [ ☣ ]$yellow chroot: running umount /boot/efi"
+                            echo -e "$orange [ ☣ ]$yellow Running umount /boot/efi"
                             chroot /mnt umount /boot/efi
                             sleep 2
                             echo " "
@@ -204,8 +210,8 @@ function grub_fix()
                     fi
             else
                 echo -e " "
-                echo -e $red "[ X ]$normal$white The Partition name you selected is not exist in /dev !\n" $normal
-                part_select
+                echo -e $red "[ X ]$normal$white Couldn't Find a linux installation in the Hard Disk !!\n" $normal
+                exit 1
             fi
     fi
 

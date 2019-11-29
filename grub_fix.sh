@@ -10,7 +10,8 @@
 #The check_efi Function check if there any efi  partition 
 ################################################################
 function check_efi()
-{
+{   
+    echo " "
     echo -e "$light_cyan [ * ]$light_blue Checking for UEFI Instalation$normal " 
     sleep 3
     echo " "
@@ -33,7 +34,8 @@ function check_efi()
         else
             sleep 3
             echo -e "$light_cyan [ * ]$light_blue No UEFI device.. Using legacy mode..$normal "
-            echo ""
+            efi_mode=false
+            sleep 2
     fi
     
 }
@@ -85,7 +87,7 @@ function grub_fix()
 {
     sleep 2
     check_efi
-    if ! $efi_mode
+    if [[ $efi_mode=fales ]]
         then
             #echo -en "$light_cyan [ * ]$light_blue Please Enter the target os partition:$normal "
             #read partition
@@ -109,6 +111,7 @@ function grub_fix()
                             echo " "
                             echo -e " $light_green[ ✔ ]$normal$light_cyan Installation Complete " 
                             sleep 2
+                            echo ""
                             echo -e "$orange [ ☣ ]$yellow Running update-grub ..."
                             chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg > /dev/null 2>&1
                             sleep 2
@@ -152,9 +155,10 @@ function grub_fix()
                             mount --bind $fs_mount /mnt/$fs_mount > /dev/null 2>&1
                     done
                     echo " "
-                    echo -e "$orange[ ☣ ]$yellow chroot: running mount $efi_dev /boot/efi ..."
+                    echo -e "$orange[ ☣ ]$yellow Running mount $efi_dev /boot/efi ..."
                     chroot /mnt mount $efi_dev /boot/efi > /dev/null 2>&1
                     sleep 2
+                    echo " "
                     echo -e "$orange [ ☣ ]$yellow Installing The new grub ..."
                     chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi > /dev/null 2>&1
                     if [ $? -eq 0 ]
@@ -166,7 +170,8 @@ function grub_fix()
                             echo -e "$orange [ ☣ ]$yellow Running update-grub ..."
                             chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg > /dev/null 2>&1
                             sleep 2
-                            echo -e "$orange [ ☣ ]$yellow chroot: running umount /boot/efi"
+                            echo " "
+                            echo -e "$orange [ ☣ ]$yellow Running umount /boot/efi"
                             chroot /mnt umount /boot/efi
                             sleep 2
                             echo " "
