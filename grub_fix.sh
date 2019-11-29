@@ -44,8 +44,6 @@ function check_efi()
 
 function part_select()
 {
-    check_efi
-    sleep 2
     echo -e "$light_cyan [ * ]$light_blue Please select the target os partition:$normal "
     echo " "
     sleep 2
@@ -85,6 +83,8 @@ function chk_root()
 
 function grub_fix()
 {
+    sleep 2
+    check_efi
     if ! $efi_mode
         then
             #echo -en "$light_cyan [ * ]$light_blue Please Enter the target os partition:$normal "
