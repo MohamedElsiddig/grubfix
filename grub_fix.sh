@@ -7,14 +7,49 @@
 
 
 ################################################################
+#The check_efi Function check if there any efi  partition 
+################################################################
+function check_efi()
+{
+    echo -e "$light_cyan [ * ]$light_blue Checking for UEFI Instalation$normal " 
+    sleep 3
+    echo " "
+    if [ -d /sys/firmware/efi ] 
+        then
+            sleep 2
+            echo -e "$light_cyan [ * ]$light_blue Found an EFI Instalation$normal " 
+            echo " "
+            efi_mode=true
+            echo -e "$light_cyan [ * ]$light_blue Please select the EFI partition:$normal "
+        echo " "
+        select efi_dev in $(sudo fdisk -l 2>/dev/null |grep -i 'efi')
+            do
+                echo ""
+                echo -e "$light_cyan [ * ]$light_blue you have chosen: $efi_dev$normal "
+                sleep 3
+                echo ""
+                break
+            done
+        else
+            sleep 3
+            echo -e "$light_cyan [ * ]$light_blue No UEFI device.. Using legacy mode..$normal "
+            echo ""
+    fi
+    
+}
+
+################################################################
 #The part_select Function lists the partition to the user
 ################################################################
 
 function part_select()
 {
+    check_efi
+    sleep 2
     echo -e "$light_cyan [ * ]$light_blue Please select the target os partition:$normal "
     echo " "
-    select partition in $(fdisk -l | grep /dev/sda | cut -f1 -d' '|cut -f1 -d'D'| sed '/^$/d')
+    sleep 2
+    select partition in $(fdisk -l 2>/dev/null |grep -i 'linux' | awk '{print $1}')
         do
             echo ""
             echo -e "$light_cyan [ * ]$light_blue Operating on $partition$normal "
@@ -50,55 +85,120 @@ function chk_root()
 
 function grub_fix()
 {
-    #echo -en "$light_cyan [ * ]$light_blue Please Enter the target os partition:$normal "
-    #read partition
-    if [[ ! -d $partition && -e $partition ]]
+    if ! $efi_mode
         then
-            echo -en 
-            mount $partition /mnt
-            for fs_mount  in /dev/ /proc/ /run/ /sys/ 
-                do
-                    echo " "
-                    echo -e "$orange [ ☣ ]$normal$yellow Mounting $white$fs_mount$yellow Virtual File System ..."
-                    sleep 2
-                    mount --bind $fs_mount /mnt/$fs_mount > /dev/null 2>&1
-            done
-            echo " "
-            echo -e "$orange [ ☣ ]$yellow Installing The new grub ..."
-            chroot /mnt  grub-install /dev/sda > /dev/null 2>&1
-            if [ $? -eq 0 ]
+            #echo -en "$light_cyan [ * ]$light_blue Please Enter the target os partition:$normal "
+            #read partition
+            if [[ ! -d $partition && -e $partition ]]
                 then
-                    sleep 2
-                    echo " "
-                    echo -e " $light_green[ ✔ ]$normal$light_cyan Installation Complete " 
-                    sleep 2
-                    echo " "
-                    echo -en " $light_cyan[ * ]$light_blue Do you want to reboot now!! ($light_green yes$light_blue/$red no $light_blue):$normal"
-                    read option
-                    if [[ ! -z $option && $option = "yes" || "$option" = "y" ]]
-                        then
-                        echo " "
-                        echo -e "$orange [ ☣ ]$yellow Rebooting System ...! "
-                        sleep 2
-                        reboot
-                    elif [[ -n $option && $option = "no" || $option = "n" ]] 
-                        then
+                    echo -en 
+                    mount $partition /mnt
+                    for fs_mount  in /dev/ /proc/ /run/ /sys/ 
+                        do
                             echo " "
-                            echo -e $orange "Quiting The Script \n" $normal
+                            echo -e "$orange [ ☣ ]$normal$yellow Mounting $white$fs_mount$yellow Virtual File System ..."
+                            sleep 2
+                            mount --bind $fs_mount /mnt/$fs_mount > /dev/null 2>&1
+                    done
+                    echo " "
+                    echo -e "$orange [ ☣ ]$yellow Installing The new grub ..."
+                    chroot /mnt grub-install "${partition:0:-1}" > /dev/null 2>&1
+                    if [ $? -eq 0 ]
+                        then
+                            sleep 2
+                            echo " "
+                            echo -e " $light_green[ ✔ ]$normal$light_cyan Installation Complete " 
+                            sleep 2
+                            echo -e "$orange [ ☣ ]$yellow Running update-grub ..."
+                            chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg > /dev/null 2>&1
+                            sleep 2
+                            echo " "
+                            echo -en " $light_cyan[ * ]$light_blue Do you want to reboot now!! ($light_green yes$light_blue/$red no $light_blue):$normal"
+                            read option
+                            if [[ ! -z $option && $option = "yes" || "$option" = "y" ]]
+                                then
+                                echo " "
+                                echo -e "$orange [ ☣ ]$yellow Rebooting System ...! "
+                                sleep 2
+                                reboot
+                            elif [[ -n $option && $option = "no" || $option = "n" ]] 
+                                then
+                                    echo " "
+                                    echo -e $orange "Quiting The Script \n" $normal
+                                else
+                                    echo " "
+                                    echo -e $red\"$option\"$normal$orange is not an option$orange "Quiting The Script \n" $normal
+                            fi
                         else
-                            echo " "
-                            echo -e $red\"$option\"$normal$orange is not an option$orange "Quiting The Script \n" $normal
+                        echo " "
+                        echo -en "$red [ X ] Grub ReInstallation Failed !!\n\tTry to execute the steps Manually\n\n$normal"
+                        exit 1
                     fi
-                else
-                echo " "
-                echo -en "$red [ X ] Grub ReInstallation Failed !!\n\tTry to execute the steps Manually\n\n$normal"
-                exit 1
+            else
+                echo -e " "
+                echo -e $red "[ X ]$normal$white The Partition name you selected is not exist in /dev !\n" $normal
+                part_select
             fi
     else
-        echo -e " "
-        echo -e $red "[ X ]$normal$white The Partition name you selected is not exist in /dev !\n" $normal
-        part_select
+        if [[ ! -d $partition && -e $partition ]]
+                then
+                    echo -en 
+                    mount $partition /mnt
+                    for fs_mount  in /dev/ /proc/ /run/ /sys/ 
+                        do
+                            echo " "
+                            echo -e "$orange [ ☣ ]$normal$yellow Mounting $white$fs_mount$yellow Virtual File System ..."
+                            sleep 2
+                            mount --bind $fs_mount /mnt/$fs_mount > /dev/null 2>&1
+                    done
+                    echo " "
+                    echo -e "$orange[ ☣ ]$yellow chroot: running mount $efi_dev /boot/efi ..."
+                    chroot /mnt mount $efi_dev /boot/efi > /dev/null 2>&1
+                    sleep 2
+                    echo -e "$orange [ ☣ ]$yellow Installing The new grub ..."
+                    chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi > /dev/null 2>&1
+                    if [ $? -eq 0 ]
+                        then
+                            sleep 2
+                            echo " "
+                            echo -e " $light_green[ ✔ ]$normal$light_cyan Installation Complete " 
+                            sleep 2
+                            echo -e "$orange [ ☣ ]$yellow Running update-grub ..."
+                            chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg > /dev/null 2>&1
+                            sleep 2
+                            echo -e "$orange [ ☣ ]$yellow chroot: running umount /boot/efi"
+                            chroot /mnt umount /boot/efi
+                            sleep 2
+                            echo " "
+                            echo -en " $light_cyan[ * ]$light_blue Do you want to reboot now!! ($light_green yes$light_blue/$red no $light_blue):$normal"
+                            read option
+                            if [[ ! -z $option && $option = "yes" || "$option" = "y" ]]
+                                then
+                                echo " "
+                                echo -e "$orange [ ☣ ]$yellow Rebooting System ...! "
+                                sleep 2
+                                reboot
+                            elif [[ -n $option && $option = "no" || $option = "n" ]] 
+                                then
+                                    echo " "
+                                    echo -e $orange "Quiting The Script \n" $normal
+                                else
+                                    echo " "
+                                    echo -e $red\"$option\"$normal$orange is not an option$orange "Quiting The Script \n" $normal
+                            fi
+                        else
+                        echo " "
+                        echo -en "$red [ X ] Grub ReInstallation Failed !!\n\tTry to execute the steps Manually\n\n$normal"
+                        exit 1
+                    fi
+            else
+                echo -e " "
+                echo -e $red "[ X ]$normal$white The Partition name you selected is not exist in /dev !\n" $normal
+                part_select
+            fi
     fi
+
+
 }
 
 
