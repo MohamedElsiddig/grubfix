@@ -32,8 +32,8 @@ function check_efi()
                         break
                     else
                         sleep 3
-                        echo -e "$light_cyan [ * ]$light_blue It seem's that your boot media booted in efi mode but no\n\t EFI partion was selected please create an efi partion and try again ..$normal "
-                        echo -e "$light_cyan [ * ]$light_blue Please refers to this link to learn how to create an efi partion\n\t https://help.ubuntu.com/community/UEFI ..$normal "
+                        echo -e "$light_cyan [ * ]$light_blue It seem's that your boot media booted in EFI mode but no\n\t EFI partion was selected please create an efi partion and try again ..$normal "
+                        echo -e "$light_cyan [ * ]$light_blue Please refers to this link to learn how to create an EFI partion\n\t https://help.ubuntu.com/community/UEFI ..$normal "
                         echo -en "$red [ X ] Grub ReInstallation Aborted ..$normal"
                         exit 1
                 fi
