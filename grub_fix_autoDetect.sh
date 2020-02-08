@@ -21,20 +21,30 @@ function check_efi()
             efi_mode=true
             echo -e "$light_cyan [ * ]$light_blue Please select the EFI partition:$normal "
         echo " "
-        select efi_dev in $(sudo fdisk -l 2>/dev/null |grep -i 'efi')
+        select efi_dev in $(sudo fdisk -l 2>/dev/null |grep -i 'efi' | sed -n 's#\(/dev/[^[:blank:]]*\).*#\1#p') 'No uefi'
             do
-                echo ""
-                echo -e "$light_cyan [ * ]$light_blue you have chosen: $efi_dev$normal "
-                sleep 3
-                echo ""
-                break
+                if [ "$efi_dev" != 'No uefi' ]
+                    then
+                        echo ""
+                        echo -e "$light_cyan [ * ]$light_blue you have chosen: $efi_dev$normal "
+                        sleep 3
+                        echo ""
+                        break
+                    else
+                        sleep 3
+                        echo -e "$light_cyan [ * ]$light_blue It seem's that your boot media booted in efi mode but no\n\t EFI partion was selected please create an efi partion and try again ..$normal "
+                        echo -e "$light_cyan [ * ]$light_blue Please refers to this link to learn how to create an efi partion\n\t https://help.ubuntu.com/community/UEFI ..$normal "
+                        echo -en "$red [ X ] Grub ReInstallation Aborted ..$normal"
+                        exit 1
+                fi
             done
         else
             sleep 3
             echo -e "$light_cyan [ * ]$light_blue No UEFI device.. Using legacy mode..$normal "
             efi_mode=false
-            sleep 3
+            sleep 2
     fi
+    
     
 }
 
@@ -48,7 +58,7 @@ function part_find()
     echo "Checking For Any Linux Installation in the Hard Disk ...!!"
     echo ""
     sleep 1
-    for partition in $(fdisk -l 2>/dev/null |grep -i 'linux' | awk '{print $1}')
+    for partition in $(fdisk -l 2>/dev/null |grep -i 'linux' | grep -iv 'swap' | sed -n 's#\(/dev/[^[:blank:]]*\).*#\1#p')
         do 
             echo -e "$white Checking $partition$normal"
             mount $partition /media/ > /dev/null 2>&1
