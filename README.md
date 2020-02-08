@@ -2,7 +2,7 @@
 Fix your grub after installing windows
 # Usage:
 
-Run the script from linux live cd:
+Run the script from linux live cd (Tested on ubuntu):
 
 * To manually enter the linux installation partition run
 
