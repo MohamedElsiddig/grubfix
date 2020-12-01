@@ -22,3 +22,5 @@ sudo ./grub_fix.sh
 ```bash
 sudo ./grub_fix_autoDetect.sh
 ```
+
+  ![](https://thepracticaldev.s3.amazonaws.com/i/98jbnwn8q3ebjhymhj1z.jpg)
